@@ -1,0 +1,15 @@
+Como o script funciona:
+Obtenção do último bloco:
+
+A função get_latest_block_hash() faz uma chamada para https://blockchain.info/latestblock e recupera o hash do bloco mais recente.
+Detalhes do bloco:
+
+A função get_block_details() recebe o hash do bloco e retorna os detalhes completos do bloco utilizando a API https://blockchain.info/rawblock/{block_hash}.
+Processamento das transações:
+
+A função process_block() processa as transações do bloco. A primeira transação (transactions[0]) é a transação de Coinbase, que é a recompensa para o minerador e não possui taxa.
+Para cada transação, o script imprime o número de entradas, saídas e calcula a taxa (diferença entre o valor das entradas e saídas).
+Observações:
+O valor das entradas e saídas é expresso em satoshis (1 BTC = 100.000.000 satoshis), por isso é dividido por 100000000 para converter para BTC.
+A API utilizada neste script retorna dados no formato JSON. Este script manipula esses dados para extrair e exibir as informações solicitadas.
+Teste o script e ajuste conforme necessário para as suas necessidades específicas.
