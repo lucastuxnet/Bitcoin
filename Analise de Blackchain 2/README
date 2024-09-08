@@ -1,0 +1,13 @@
+O código busca as transações associadas ao endereço: 
+- Usa a API BlockCypher para obter o histórico completo de transações do endereço fornecido.
+Trata então as transações exportando do código:
+- Histórico de saldo: Calcula e plota o saldo do endereço ao longo do tempo.
+- Índice de Gini: Calcula o índice de Gini para avaliar a desigualdade nas transações (baseado nos valores das saídas das transações).
+- Distribuição de Benford: Verifica a conformidade dos valores das transações com a Lei de Benford, plotando o primeiro dígito das transações contra a distribuição esperada.
+
+Dependências:
+- requests para fazer as requisições à API.
+- pandas, matplotlib e numpy para lidar com os dados e plotar os gráficos.
+
+Executando o código:
+python3 analiseblockchain.py
