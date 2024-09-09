@@ -7,7 +7,7 @@ Trata então as transações exportando do código:
 
 Dependências:
 - requests para fazer as requisições à API.
-- pandas, matplotlib e numpy para lidar com os dados e plotar os gráficos.
+- pandas, seaborn, matplotlib e numpy para lidar com os dados e plotar os gráficos.
 
 Executando o código:
 python3 analiseblockchain.py
