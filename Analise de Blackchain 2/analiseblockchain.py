@@ -1,89 +1,129 @@
 import requests
 import pandas as pd
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from datetime import datetime
 
-# Função para obter o histórico de transações de um endereço de Bitcoin
-def get_address_transactions(address):
-    # API do blockcypher (você pode usar outras como blockchair)
-    url = f"https://api.blockcypher.com/v1/btc/main/addrs/{address}/full"
+# Função para buscar transações de um endereço Bitcoin
+def get_transactions(address):
+    url = f'https://blockchain.info/rawaddr/{address}'
     response = requests.get(url)
-    
     if response.status_code == 200:
         data = response.json()
-        return data['txs']  # retorna todas as transações do endereço
+        return data['txs']
     else:
-        raise Exception("Erro ao acessar os dados da API")
+        print(f"Erro ao buscar transações: {response.status_code}")
+        return []
 
-# Função para calcular o saldo ao longo das transações
-def calculate_balance(transactions, address):
-    balance = 0
+# Função para calcular o saldo histórico de um endereço agrupado por dia
+def calculate_balance_history(transactions):
     balance_history = []
-    dates = []
-    
-    for tx in transactions:
-        # Calcule o valor líquido das entradas e saídas
-        net_value = sum(output['value'] for output in tx['outputs'] if address in output.get('addresses', [])) \
-                    - sum(input['output_value'] for input in tx['inputs'] if address in input.get('addresses', []))
-        balance += net_value
-        balance_history.append(balance)
-        dates.append(tx['confirmed'])
-    
-    return balance_history, dates
+    balance = 0
+    balance_per_day = {}
 
-# Função para calcular o índice de Gini das transações
-def gini(transactions):
-    values = [tx['outputs'][0]['value'] for tx in transactions if 'outputs' in tx]
-    sorted_values = np.sort(values)
+    for tx in transactions:
+        # Convertendo timestamp para data legível (dia-mês-ano)
+        date = datetime.utcfromtimestamp(tx['time']).strftime('%d-%m-%Y')
+
+        # Calculando o valor de cada transação
+        value = sum(output['value'] for output in tx['out'] if 'addr' in output and output['addr'] == address)
+
+        # Atualizando o saldo
+        balance += value
+
+        # Guardando o saldo no dicionário agrupado por dia
+        if date in balance_per_day:
+            balance_per_day[date] += balance
+        else:
+            balance_per_day[date] = balance
+
+    # Convertendo o dicionário para uma lista de tuplas (data, saldo)
+    for date, balance in balance_per_day.items():
+        balance_history.append((date, balance))
+
+    # Ordena pela data
+    balance_history.sort(key=lambda x: datetime.strptime(x[0], '%d-%m-%Y'))
+
+    return balance_history
+
+# Função para calcular o índice de GINI
+def calculate_gini(values):
+    values = np.sort(values)
     n = len(values)
-    cumulative_values = np.cumsum(sorted_values)
-    gini_index = (2 * np.sum(cumulative_values) / (n * np.sum(sorted_values))) - (n + 1) / n
+    cumulative_values = np.cumsum(values)
+    gini_index = (2 / n) * (np.sum(np.arange(1, n+1) * values)) / np.sum(values) - (n + 1) / n
     return gini_index
 
-# Função para verificar a conformidade das transações com a Lei de Benford
-def benford_law(transactions):
-    first_digits = [int(str(tx['outputs'][0]['value'])[0]) for tx in transactions if tx['outputs'][0]['value'] > 0]
-    counts = np.bincount(first_digits)[1:]  # Contar o número de ocorrências de cada dígito de 1 a 9
-    total = len(first_digits)
-    
-    benford_distribution = np.log10(1 + 1 / np.arange(1, 10))
-    
-    # Plotar a distribuição observada versus a Lei de Benford
-    plt.bar(np.arange(1, 10), counts / total, alpha=0.7, label="Transações")
-    plt.plot(np.arange(1, 10), benford_distribution, 'r-', lw=2, label="Lei de Benford")
-    plt.xlabel("Primeiro Dígito")
-    plt.ylabel("Frequência")
+# Função para aplicar a Lei de Benford
+def benford_analysis(transactions):
+    values = [int(str(sum(output['value'] for output in tx['out']))[0]) for tx in transactions]
+    benford_dist = np.log10(1 + 1 / np.arange(1, 10))
+    counts = np.bincount(values, minlength=10)[1:10]
+    return counts / sum(counts), benford_dist
+
+# Função para gerar gráfico do saldo histórico por dia
+def plot_balance_history(balance_history):
+    dates = [item[0] for item in balance_history]
+    balances = [item[1] for item in balance_history]
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(dates, balances, label="Saldo Histórico")
+    plt.xlabel('Data')
+    plt.ylabel('Saldo (satoshi)')
+    plt.title('Histórico do Saldo por Dia')
+    plt.xticks(rotation=45, ha="right")  # Rotaciona as datas para melhor visualização
     plt.legend()
-    plt.title("Distribuição de Benford nas Transações")
+    plt.tight_layout()
     plt.show()
 
-# Função principal que executa todas as análises
-def main():
-    address = "1JHH1pmHujcVa1aXjRrA13BJ13iCfgfBqj"
-    
-    # Obter transações do endereço
-    print("Obtendo transações...")
-    transactions = get_address_transactions(address)
-    
-    # 1. Analisar histórico de saldo
-    print("Calculando histórico de saldo...")
-    balance_history, dates = calculate_balance(transactions, address)
-    
-    plt.plot(dates, balance_history)
-    plt.title("Histórico de saldo do endereço")
-    plt.xlabel("Data")
-    plt.ylabel("Saldo (Satoshis)")
-    plt.xticks(rotation=45)
+# Função para gerar gráfico do índice de GINI
+def plot_gini(values):
+    plt.figure(figsize=(10, 6))
+    sns.histplot(values, kde=True, label="Distribuição de Transações")
+    plt.title("Distribuição das Transações e GINI")
+    plt.legend()
     plt.show()
-    
-    # 2. Calcular o índice de Gini
-    print("Calculando índice de Gini...")
-    gini_index = gini(transactions)
-    print(f"Índice de Gini das transações: {gini_index}")
-    
-    # 3. Analisar distribuição de Benford
-    print("Analisando a distribuição de Benford...")
-    benford_law(transactions)
 
-if __name__ == "__main__":
-    main()
+# Função para gerar gráfico da Lei de Benford
+def plot_benford(benford_counts, benford_expected):
+    plt.figure(figsize=(10, 6))
+    plt.bar(np.arange(1, 10), benford_counts, label="Distribuição Observada")
+    plt.plot(np.arange(1, 10), benford_expected, 'r--', label="Distribuição Benford")
+    plt.xlabel('Primeiro Dígito')
+    plt.ylabel('Proporção')
+    plt.title('Análise da Lei de Benford')
+    plt.legend()
+    plt.show()
+
+# Endereço a ser analisado
+address = '1JHH1pmHujcVa1aXjRrA13BJ13iCfgfBqj'
+
+# Buscar transações
+transactions = get_transactions(address)
+
+# Análise do saldo por dia
+balance_history = calculate_balance_history(transactions)
+
+# Imprimir o histórico de saldo por dia
+print("Histórico de Saldo por Dia (dd-mm-aaaa):")
+for date, balance in balance_history:
+    print(f"{date}: {balance} satoshis")
+
+# Gerar gráfico de saldo por dia
+plot_balance_history(balance_history)
+
+# Análise de GINI das transações
+transaction_values = [sum(output['value'] for output in tx['out']) for tx in transactions]
+gini_index = calculate_gini(transaction_values)
+print(f"Índice de GINI das transações: {gini_index:.4f}")
+
+# Gráfico do índice de GINI
+plot_gini(transaction_values)
+
+# Análise de Benford das transações
+benford_counts, benford_expected = benford_analysis(transactions)
+print("Distribuição Benford das transações:", benford_counts)
+
+# Gráfico da Lei de Benford
+plot_benford(benford_counts, benford_expected)
