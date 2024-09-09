@@ -1,0 +1,55 @@
+lucas@stuxnet:~/Documentos/ufu/Bitcoin/Analise de Blackchain 2$ python3 analiseblockchain.py
+/home/lucas/Documentos/ufu/Bitcoin/Analise de Blackchain 2/analiseblockchain.py:25: DeprecationWarning: datetime.datetime.utcfromtimestamp() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.fromtimestamp(timestamp, datetime.UTC).
+  date = datetime.utcfromtimestamp(tx['time']).strftime('%d-%m-%Y')
+Histórico de Saldo por Dia (dd-mm-aaaa):
+24-05-2021: 320720774417 satoshis
+26-05-2021: 641411712934 satoshis
+28-05-2021: 641383820228 satoshis
+31-05-2021: 641325741450 satoshis
+02-06-2021: 961948565930 satoshis
+04-06-2021: 641270717376 satoshis
+10-06-2021: 641238742958 satoshis
+11-06-2021: 640967293314 satoshis
+15-06-2021: 640920975980 satoshis
+17-06-2021: 640906674602 satoshis
+21-06-2021: 1270251946144 satoshis
+23-06-2021: 631875973072 satoshis
+25-06-2021: 947548472796 satoshis
+30-06-2021: 631046144994 satoshis
+01-07-2021: 630476539996 satoshis
+02-07-2021: 630417620439 satoshis
+08-07-2021: 630374049585 satoshis
+09-07-2021: 630337031596 satoshis
+13-07-2021: 630305585999 satoshis
+15-07-2021: 315145517098 satoshis
+16-07-2021: 630181034360 satoshis
+22-07-2021: 315081416895 satoshis
+23-07-2021: 315081416895 satoshis
+26-07-2021: 315081416895 satoshis
+28-07-2021: 315066988964 satoshis
+30-07-2021: 630104668174 satoshis
+02-08-2021: 315042344576 satoshis
+04-08-2021: 630084689152 satoshis
+06-08-2021: 315006787685 satoshis
+09-08-2021: 314993526844 satoshis
+10-08-2021: 944927192916 satoshis
+11-08-2021: 944749242141 satoshis
+12-08-2021: 629799900000 satoshis
+13-08-2021: 314899950000 satoshis
+25-08-2021: 934699900000 satoshis
+26-08-2021: 900400000000 satoshis
+27-08-2021: 516200000000 satoshis
+30-08-2021: 866900000000 satoshis
+31-08-2021: 406200000000 satoshis
+01-09-2021: 935100000000 satoshis
+03-09-2021: 318000000000 satoshis
+05-09-2021: 269000000000 satoshis
+08-09-2021: 210000000000 satoshis
+09-09-2021: 165000000000 satoshis
+10-09-2021: 241000000000 satoshis
+13-09-2021: 75500000000 satoshis
+14-09-2021: 23500000000 satoshis
+03-02-2022: 0 satoshis
+Índice de GINI das transações: 0.8332
+Distribuição Benford das transações: [0.36 0.19 0.13 0.04 0.07 0.03 0.05 0.09 0.04]
+
