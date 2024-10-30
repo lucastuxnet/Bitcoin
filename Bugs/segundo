@@ -1,0 +1,61 @@
+Introdução
+Este relatório identifica e descreve três bugs presentes no contrato TokenAuction. Para cada bug, é fornecida uma descrição detalhada de como ocorrem, suas consequências, e uma correção satisfatória para resolver o problema.
+
+Bug 1: Transferência de Token Não Garantida
+Descrição: Na função createAuction, a transferência do token para o contrato não é garantida, o que pode resultar na perda do token se o leilão não for iniciado.
+
+Como ocorre: A função createAuction apenas configura os parâmetros do leilão sem transferir a propriedade do token para o contrato, deixando o token vulnerável a não ser transferido corretamente.
+
+Consequência: O proprietário do token pode perder o controle sobre o token, e o token pode nunca ser leiloado se o leilão não for iniciado.
+
+Correção: Transferir a propriedade do token na função initAuction após verificar que a propriedade é do contrato.
+
+function initAuction(string memory name) public {
+    require(myAuctions[name].myState == AuctionStates.Prep, "The auction should be in Prep state");
+    require(myAuctions[name].token.isOwner(msg.sender), "You must own the token to initiate the auction");
+    myAuctions[name].token.transferFrom(msg.sender, address(this));
+    myAuctions[name].myState = AuctionStates.Bid;
+}
+
+Bug 2: Falha na Função claimToken
+Descrição: A função claimToken utiliza o flag collateral[msg.sender] de forma inadequada para sinalizar a reclamação do token, o que pode causar comportamentos indesejados.
+
+Como ocorre: Após o pagamento, o flag collateral[msg.sender] é usado para indicar que o token foi reclamado, mas isso pode causar confusão e possíveis problemas de segurança.
+
+Consequência: Pode haver um problema de segurança ao reutilizar o flag collateral, potencialmente permitindo que outras funções sejam indevidamente acessadas.
+
+Correção: Introduzir uma flag separada para acompanhar se o token foi reclamado.
+
+function claimToken(string memory name) public payable {
+    OneAuction storage a = myAuctions[name];
+    verifyFinished(a);
+    require(a.myState == AuctionStates.Finished, "Wait a minute, boys, this one is not dead");
+    require(msg.value == a.winnerBid - collateralValue, "Pay First....");
+    a.token.transfer(msg.sender);
+    a.collateral[msg.sender] = false; 
+    a.payment = true;  // Nova flag para indicar que o pagamento foi realizado.
+}
+
+
+Bug 3: Retirada de Taxa pelo Proprietário do Contrato
+Descrição: A função getFee permite que o proprietário retire todo o saldo do contrato, o que pode incluir mais do que apenas as taxas de leilão.
+
+Como ocorre: A função getFee transfere o saldo total do contrato para o proprietário sem verificar se a quantia corresponde apenas às taxas de leilão.
+
+Consequência: O proprietário pode retirar fundos adicionais que não deveriam ser parte das taxas, causando uma potencial retirada indevida de fundos.
+
+Correção: Calcular e retirar apenas o valor das taxas acumuladas.
+
+Correção: Calcular e retirar apenas o valor das taxas acumuladas.
+function getFee() public {
+    uint totalFees = 0;
+    for (string storage name in myAuctions) {
+        totalFees += contractFee;
+    }
+    require(address(this).balance >= totalFees, "Insufficient balance to withdraw fees");
+    owner.transfer(totalFees);
+}
+
+
+Conclusão
+Essas correções abordam os problemas identificados no contrato TokenAuction, garantindo uma maior segurança e funcionalidade do sistema de leilão de tokens. Implementar essas mudanças irá mitigar os riscos de perda de tokens, uso inadequado de flags, e retirada indevida de fundos.

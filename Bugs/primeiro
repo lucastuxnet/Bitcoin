@@ -1,0 +1,61 @@
+Bug 1: Ausência de Inicialização do Limite de Blocos (blocklimit)
+
+Localização: Função createAuction
+Descrição: Ao criar um leilão, o código não inicializa o blocklimit. Esse valor é crucial para determinar a duração do leilão, pois define o bloco no qual o leilão se encerra.
+Consequências: Sem a inicialização adequada do blocklimit, o término do leilão fica indefinido. Ofertas podem ser feitas após o período pretendido, causando confusão e disputas sobre a validade das mesmas.
+Correção:
+
+function createAuction(string memory name, uint time, VerySimpleToken t) public {
+  require(t.isOwner(msg.sender), "Você precisa ser o dono do token para criar um leilão!");
+  OneAuction memory l;
+  l.blocklimit = block.number + time; // Inicializar blocklimit aqui
+  l.myState = AuctionStates.Prep;
+  l.winnerBid = 0;
+  l.tokenOwner = msg.sender;
+  l.payment = false;
+  l.token = t;
+  myAuctions[name] = l;
+}
+
+
+Bug 2: Reivindicação Múltipla do Token pelo Vencedor
+
+Localização: Função claimToken
+Descrição: Quando o vencedor reivindica o token, a flag collateral[msg.sender] é definida como false. O problema surge se o vencedor chamar a função claimToken repetidamente antes do processamento do pagamento. Isso permite que o vencedor reivindique o token mais de uma vez.
+Consequências: Várias reivindicações bem-sucedidas do token pelo vencedor podem levar à perda do token para o vendedor e a um desequilíbrio no fluxo do leilão.
+Correção:
+
+
+function claimToken(string memory name) public payable {
+  OneAuction storage a = myAuctions[name];
+  verifyFinished(a);
+  require(a.myState == AuctionStates.Finished, "Espere um pouco, o leilão ainda não terminou");
+  require(msg.value == a.winnerBid - collateralValue, "Pague primeiro....");
+  a.token.transfer(msg.sender);
+  // Definir a flag collateral como false somente após o processamento bem-sucedido do pagamento
+  if (msg.sender == a.winner && msg.value == a.winnerBid - collateralValue) {
+    a.collateral[msg.sender] = false;
+  }
+}
+
+
+Bug 3: Acesso Incorreto ao Saldo do Contrato
+
+Localização: Função getFee
+Descrição: A função getFee tenta transferir todo o saldo do contrato para o endereço owner usando address(this).balance. Entretanto, balance não é uma propriedade diretamente acessível dentro do Solidity.
+Consequências: O código falhará na compilação devido ao uso incorreto de balance para acessar o saldo do contrato.
+Correção:
+
+function getFee() public {
+  // Acessar o saldo do contrato usando o método apropriado
+  uint balance = address(this).balance;
+  owner.transfer(balance);
+}
+
+Considerações Adicionais
+
+Controle de Acesso: O contrato poderia se beneficiar de um mecanismo de controle de acesso mais robusto para restringir determinadas funções (por exemplo, claimToken, claimCollateral) a usuários autorizados.
+Tratamento de Erros: O tratamento de erros poderia ser aprimorado para fornecer mensagens mais informativas em caso de transações falhas ou entradas inválidas.
+Conclusão
+
+Este relatório identificou e corrigiu três bugs significativos no contrato TokenAuction. A implementação das correções propostas melhora a confiabilidade, segurança e o fluxo do leilão. Além disso, o relatório destaca a importância de boas práticas como a inicialização adequada de variáveis e o uso correto de métodos para acessar informações do contrato.
